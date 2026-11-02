@@ -27,8 +27,12 @@ create table if not exists public.settings (
   time_limits       jsonb not null default '{}'::jsonb,  -- { "<quiz id>": seconds }
   leaderboard_size  int not null default 25 check (leaderboard_size between 1 and 500),
   leaderboard_mode  text not null default 'best' check (leaderboard_mode in ('best', 'all')),
+  capitals_prompt   text not null default 'outline' check (capitals_prompt in ('outline', 'map')),
   updated_at        timestamptz not null default now()
 );
+-- Added later; this line upgrades databases created before the column existed.
+alter table public.settings add column if not exists
+  capitals_prompt text not null default 'outline' check (capitals_prompt in ('outline', 'map'));
 insert into public.settings (id) values (1) on conflict (id) do nothing;
 
 -- The invite code lives in its own table that only the admin can read.

@@ -5,12 +5,15 @@ export interface Profile {
 }
 
 export type LeaderboardMode = 'best' | 'all';
+/** What the capitals quizzes show: the country's outline, or a map with it highlighted. */
+export type CapitalsPrompt = 'outline' | 'map';
 
 export interface Settings {
   /** Seconds per quiz id. Missing entries fall back to the quiz default. */
   timeLimits: Record<string, number>;
   leaderboardSize: number;
   leaderboardMode: LeaderboardMode;
+  capitalsPrompt: CapitalsPrompt;
 }
 
 export interface ScoreInput {
@@ -57,6 +60,7 @@ export const DEFAULT_SETTINGS: Settings = {
   timeLimits: {},
   leaderboardSize: 25,
   leaderboardMode: 'best',
+  capitalsPrompt: 'outline',
 };
 
 export class UserError extends Error {}

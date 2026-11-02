@@ -107,6 +107,26 @@ describe('streak game', () => {
     expect(s.correctIds).toEqual(['USA', 'AFG']);
   });
 
+  it('a wrong answer can be typed in full when it starts with another country', () => {
+    let s = start(['GNQ', 'FRA']);
+    s = typeAll(s, 'Guinea Bissa', 0);
+    expect(s.event).toBeNull(); // nothing judged yet
+    expect(s.input).toBe('Guinea Bissa');
+    s = typeAll(s, 'u', 0);
+    expect(s.event?.type).toBe('wrong');
+    expect(s.queue[0]).toBe('GNQ');
+    s = typeAll(s, 'Equatorial Guinea', 0);
+    expect(s.correctIds).toEqual(['GNQ']);
+  });
+
+  it('UK on the way to Ukraine is not judged when the flag is someone else', () => {
+    let s = start(['FRA']);
+    s = typeAll(s, 'UK', 0);
+    expect(s.event).toBeNull();
+    s = typeAll(s, 'raine', 0);
+    expect(s.event?.type).toBe('wrong');
+  });
+
   it('wrong answers are still caught after a carry', () => {
     let s = start(['USA', 'AFG']);
     s = typeAll(s, 'USA', 0);

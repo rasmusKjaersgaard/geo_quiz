@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { backend, type LeaderboardMode } from '../backend';
+import { backend, type CapitalsPrompt, type LeaderboardMode } from '../backend';
 import { QUIZZES } from '../data/quizzes';
 import { durationText, parseDuration } from '../lib/format';
 import { timeLimitOf, useApp } from '../state';
@@ -11,6 +11,7 @@ export function AdminPage() {
   const [limits, setLimits] = useState<Record<string, string>>({});
   const [size, setSize] = useState(settings.leaderboardSize);
   const [mode, setMode] = useState<LeaderboardMode>(settings.leaderboardMode);
+  const [capitalsPrompt, setCapitalsPrompt] = useState<CapitalsPrompt>(settings.capitalsPrompt);
   const [invite, setInvite] = useState('');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [inviteMsg, setInviteMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -19,6 +20,7 @@ export function AdminPage() {
     setLimits(Object.fromEntries(QUIZZES.map((q) => [q.id, durationText(timeLimitOf(settings, q.id))])));
     setSize(settings.leaderboardSize);
     setMode(settings.leaderboardMode);
+    setCapitalsPrompt(settings.capitalsPrompt);
   }, [settings]);
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export function AdminPage() {
       timeLimits[q.id] = sec;
     }
     try {
-      await backend.updateSettings({ timeLimits, leaderboardSize: size, leaderboardMode: mode });
+      await backend.updateSettings({ timeLimits, leaderboardSize: size, leaderboardMode: mode, capitalsPrompt });
       await refreshSettings();
       setMsg({ ok: true, text: 'Settings saved.' });
     } catch (e) {
@@ -80,6 +82,19 @@ export function AdminPage() {
       </section>
 
       <section className="card">
+        <h2>Capitals quizzes</h2>
+        <p className="desc">What players see next to the country name. Applies to all seven capitals quizzes from the next game.</p>
+        <div className="radio-row" role="radiogroup" aria-label="Capitals prompt">
+          <label>
+            <input type="radio" name="capitals" checked={capitalsPrompt === 'outline'} onChange={() => setCapitalsPrompt('outline')} /> Country outline
+          </label>
+          <label>
+            <input type="radio" name="capitals" checked={capitalsPrompt === 'map'} onChange={() => setCapitalsPrompt('map')} /> Map with the country highlighted
+          </label>
+        </div>
+      </section>
+
+      <section className="card">
         <h2>Leaderboards</h2>
         <p className="desc">Applies to every quiz.</p>
         <div className="field">
@@ -103,13 +118,14 @@ export function AdminPage() {
             </label>
           </div>
         </div>
-        <div className="save-row">
-          <button className="btn primary" onClick={save}>
-            Save settings
-          </button>
-          {msg && <span className={msg.ok ? 'ok' : 'error'}>{msg.text}</span>}
-        </div>
       </section>
+
+      <div className="save-row settings-save">
+        <button className="btn primary" onClick={save}>
+          Save settings
+        </button>
+        {msg && <span className={msg.ok ? 'ok' : 'error'}>{msg.text}</span>}
+      </div>
 
       <section className="card">
         <h2>Invite code</h2>

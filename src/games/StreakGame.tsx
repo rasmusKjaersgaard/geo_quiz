@@ -8,6 +8,8 @@ import { multiplier } from '../lib/scoring';
 import { initStreak, skip, submitAnswer, typeAnswer, type StreakState } from '../lib/streakGame';
 import { AnswerInput, Countdown, GameButton, useGameClock, type GameProps } from '../components/gameKit';
 import { Silhouette } from '../components/Silhouette';
+import { MapView, type MapStatus } from '../components/MapView';
+import { useApp } from '../state';
 
 const flagUrl = (id: string) => asset(`flags/${COUNTRY_BY_ID[id].flag}.svg`);
 
@@ -26,6 +28,18 @@ export function StreakGame({ quizId, limitSec, finished, onFinish }: GameProps) 
   const doneRef = useRef(false);
   const total = quiz.countryIds.length;
   const current = state.queue[0];
+  // Capitals can show the country on a map instead of its outline (admin setting,
+  // read once when the game starts).
+  const { settings } = useApp();
+  const [mapPrompt] = useState(() => mode === 'capitals' && settings.capitalsPrompt === 'map');
+  const activeMapIds = useMemo(() => new Set(quiz.countryIds.map((id) => COUNTRY_BY_ID[id].mapId)), [quiz]);
+  const missedAtEnd = finished ? state.queue : null;
+  const mapStatus = useMemo(() => {
+    const st: Record<string, MapStatus> = {};
+    for (const id of state.correctIds) st[COUNTRY_BY_ID[id].mapId] = 'found';
+    for (const id of missedAtEnd ?? []) st[COUNTRY_BY_ID[id].mapId] = 'missed';
+    return st;
+  }, [state.correctIds, missedAtEnd]);
 
   const finish = (s: StreakState) => {
     if (doneRef.current) return;
@@ -83,6 +97,28 @@ export function StreakGame({ quizId, limitSec, finished, onFinish }: GameProps) 
   const ev = state.event;
   const nextMult = multiplier(state.streak + 1);
 
+  const answerBar = (
+    <div className="gamebar">
+      <AnswerInput
+        value={state.input}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+        disabled={finished}
+        placeholder={finished ? 'Game over' : mode === 'flags' ? 'Which country?' : 'Capital city…'}
+        label={mode === 'flags' ? 'Country for this flag' : 'Capital of this country'}
+        flash={ev?.type === 'wrong' ? 'wrong' : ev?.type === 'correct' ? 'right' : null}
+        flashSeq={ev?.seq}
+      />
+      <Countdown start={start} limitSec={limitSec} running={!finished} onExpire={() => finish(stateRef.current)} />
+      {!finished && (
+        <>
+          <GameButton onClick={doSkip}>Skip</GameButton>
+          <GameButton onClick={() => finish(stateRef.current)}>Give up</GameButton>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div>
       <div className="hud">
@@ -117,7 +153,26 @@ export function StreakGame({ quizId, limitSec, finished, onFinish }: GameProps) 
         </div>
       </div>
 
-      {!finished && current && (
+      {/* Map mode: the answer box goes above the map so it stays on screen. */}
+      {mapPrompt && answerBar}
+      {mapPrompt && (
+        <div className="prompt map-prompt">
+          {!finished && current && (
+            <h2 className="prompt-enter" key={`${current}-${ev?.type === 'skip' ? ev.seq : ''}`}>
+              {COUNTRY_BY_ID[current].name}
+            </h2>
+          )}
+          <MapView
+            view={quiz.continent ?? 'world'}
+            status={mapStatus}
+            activeMapIds={activeMapIds}
+            currentMapId={!finished && current ? COUNTRY_BY_ID[current].mapId : null}
+            flashMapId={ev?.type === 'correct' ? COUNTRY_BY_ID[ev.id].mapId : null}
+          />
+        </div>
+      )}
+
+      {!mapPrompt && !finished && current && (
         <div className="prompt" key={`${current}-${ev?.type === 'skip' ? ev.seq : ''}`}>
           {mode === 'flags' ? (
             <img className="flag prompt-enter" src={flagUrl(current)} alt="Flag to identify" draggable={false} />
@@ -130,25 +185,7 @@ export function StreakGame({ quizId, limitSec, finished, onFinish }: GameProps) 
         </div>
       )}
 
-      <div className="gamebar">
-        <AnswerInput
-          value={state.input}
-          onChange={onChange}
-          onKeyDown={onKeyDown}
-          disabled={finished}
-          placeholder={finished ? 'Game over' : mode === 'flags' ? 'Which country?' : 'Capital city…'}
-          label={mode === 'flags' ? 'Country for this flag' : 'Capital of this country'}
-          flash={ev?.type === 'wrong' ? 'wrong' : ev?.type === 'correct' ? 'right' : null}
-          flashSeq={ev?.seq}
-        />
-        <Countdown start={start} limitSec={limitSec} running={!finished} onExpire={() => finish(stateRef.current)} />
-        {!finished && (
-          <>
-            <GameButton onClick={doSkip}>Skip</GameButton>
-            <GameButton onClick={() => finish(stateRef.current)}>Give up</GameButton>
-          </>
-        )}
-      </div>
+      {!mapPrompt && answerBar}
       {!finished && (
         <p className="keys">
           Answers are checked as you type. <kbd>Enter</kbd> checks a short answer{mode === 'flags' ? ' (Niger vs Nigeria)' : ''}. <kbd>Tab</kbd> skips.

@@ -21,11 +21,13 @@ Allow about 15 minutes. You need a GitHub account and a free Supabase account.
 
 ### 2. Configure authentication
 
-In the Supabase dashboard, open **Authentication → Sign In / Providers → Email**:
+In the Supabase dashboard, open **Authentication → Sign In / Providers** (under *Configuration* in the left menu). Don't open the Email provider itself; the settings you need are on the page.
 
-1. Make sure **Email** is enabled.
-2. Turn **Confirm email** **off**. Accounts use hidden fake addresses (`<username>@geoquiz.local`) that can't receive mail, so confirmation must be off.
-3. Save.
+1. In the **User Signups** section at the top, make sure **Allow new users to sign up** is on.
+2. In the same section, turn **Confirm email** **off** and click **Save changes**. Accounts use hidden fake addresses (`<username>@geoquiz.local`) that can't receive mail, so confirmation must be off.
+3. Further down, under **Auth Providers**, check that **Email** says *Enabled* (it is by default).
+
+The Email provider's own panel (with "Secure email change") doesn't need any changes.
 
 Optionally, under **Authentication → URL Configuration**, set **Site URL** to your future site address, `https://<your-github-user>.github.io/<repo-name>/`. Nothing depends on it, but it keeps Supabase tidy.
 
@@ -40,10 +42,10 @@ The migration is safe to run again later, for example after editing it.
 
 ### 4. Copy your API keys
 
-In Supabase, open **Project Settings → API Keys** (on older dashboards: **Project Settings → API**) and copy:
+You need two values:
 
-- the **Project URL**, like `https://abcdefgh.supabase.co`
-- the **anon public** key, or the newer **publishable** key (`sb_publishable_…`). Either one works.
+- **Project URL**, like `https://abcdefgh.supabase.co`. Find it under **Project Settings → Data API**, or via the **Connect** button at the top of the dashboard. You can also build it yourself: it's `https://<project-id>.supabase.co`, where the project ID is the code in your dashboard address (`supabase.com/dashboard/project/<project-id>`) and is also shown under **Project Settings → General**.
+- **Publishable key** (`sb_publishable_…`) from **Project Settings → API Keys**. The older **anon public** key (on the *Legacy API keys* tab) also works.
 
 Both values are meant to be public: they end up in the website's JavaScript. The database is protected by the row-level security rules in the migration. **Never** use the `service_role` / secret key here.
 
@@ -131,13 +133,22 @@ All country data is in **`src/data/countries.ts`**: names, aliases, continent, c
 
 Before comparing, answers are normalized: case, accents, punctuation, hyphens, apostrophes and spaces are ignored, a leading "the" is dropped, "&" equals "and", and "St"/"St." equals "Saint". So you only need to add genuinely different names as aliases, not spelling variants of the same one. There is deliberately no typo tolerance.
 
+**Two-word names must be typed in full.** "Saudi" doesn't count for Saudi Arabia, nor "Burkina", "Vatican" or "Dominican Rep". Abbreviations still work (UK, USA, KSA, RSA, DRC), and so do genuinely different names (Ivory Coast, Holy See, Swaziland). Names of three or more words keep their short forms: Saint Vincent, Bosnia, Antigua, Trinidad, São Tomé. A unit test enforces this, so an alias that breaks the rule fails the build.
+
 **Countries quiz:** a country is accepted the instant its name is complete, Sporcle-style, and the box clears. If you were actually typing a longer name, you can just keep going:
 
 - "Niger…ia" counts Niger and then Nigeria.
 - "UK…raine" counts the UK and then Ukraine.
 - Typing "USA" doesn't leave a stray "A" behind.
 
-**Flags and Capitals:** an answer is marked wrong only when it is exactly another country's name (or capital) and can't be the start of the right answer. For example, "Niger" is not marked wrong while you're on your way to "Nigeria". Press **Enter** to force a check, e.g. to answer "Niger" when the flag is Nigeria's.
+**Flags and Capitals:** the right answer is accepted the instant it's complete. A wrong answer is only marked wrong once it can't grow into a longer name. So "Guinea", "UK", "Niger" and "Dominica" are never marked wrong mid-word; you can always finish typing "Guinea-Bissau", "Ukraine", "Nigeria" or "Dominican Republic". If you really mean the short one, press **Enter** to have it checked.
+
+**Capitals: outline or map.** On the admin Settings page, under *Capitals quizzes*, choose what's shown next to the country name:
+
+- *Country outline* (default): the country's silhouette.
+- *Map with the country highlighted*: a map of the continent (or the world, for Capitals of the World). The country in question is shown in yellow, small ones get a pulsing ring, answered countries turn green, and missed ones turn red at the end.
+
+The setting applies to all seven capitals quizzes from the next game, and shares the same leaderboards. The continent framings are in `CONTINENT_VIEWS` at the top of `src/components/MapView.tsx`.
 
 ### Scoring (Flags and Capitals)
 
@@ -174,9 +185,15 @@ A wrong answer resets the streak. The prompt stays on screen and its clock keeps
 `supabase/migration.sql` creates:
 
 - `profiles`: one row per user, with `is_admin`.
-- `settings`: time limits, leaderboard size and mode. Readable by everyone; only the admin can update it.
+- `settings`: time limits, leaderboard size and mode, and the capitals outline/map option. Readable by everyone; only the admin can update it.
 - `settings_private`: the invite code. Admin only.
 - `scores`: logged-in users can read all scores and insert only their own. Nobody can edit scores; the admin can delete them.
+
+### Updating an existing installation
+
+When an update adds something to the database, it comes with a small SQL file in `supabase/`. Run it once in the SQL Editor; each one is safe to run again. Re-running the whole `migration.sql` works too and keeps all accounts, scores and settings.
+
+- `update-capitals-map.sql`: adds the capitals outline/map setting.
 
 ### Changing the admin
 
@@ -192,6 +209,7 @@ A wrong answer resets the streak. The prompt stays on screen and its clock keeps
 ## Troubleshooting
 
 - **"Sign-up was rejected."** The database refused the account. Usually the invite code changed between the check and the sign-up, or the migration wasn't run.
+- **"The database needs a small update first."** The site is newer than the database. Run the SQL file the message names (see *Updating an existing installation*).
 - **"Account created, but no session was returned."** "Confirm email" is still on in Supabase (step 2). Turn it off. The user can then log in normally.
 - **The site shows "Local mode".** The GitHub secrets are missing or misnamed. Check step 6, then re-run the workflow.
 - **Blank page on GitHub Pages.** Check that Pages uses **GitHub Actions** as the source (step 7), and look at the Actions log.

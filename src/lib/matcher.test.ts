@@ -40,7 +40,7 @@ describe('normalize', () => {
 
 describe('country aliases', () => {
   const cases: [string, string][] = [
-    ['Vatican', 'VAT'], ['Vatican City', 'VAT'], ['Holy See', 'VAT'], ['the holy see', 'VAT'],
+    ['Vatican City', 'VAT'], ['Holy See', 'VAT'], ['the holy see', 'VAT'],
     ['DRC', 'COD'], ['DR Congo', 'COD'], ['D.R. Congo', 'COD'], ['Congo-Kinshasa', 'COD'], ['Democratic Republic of the Congo', 'COD'],
     ['Congo', 'COG'], ['Republic of the Congo', 'COG'], ['Congo-Brazzaville', 'COG'], ['congo brazzaville', 'COG'],
     ['USA', 'USA'], ['US', 'USA'], ['U.S.', 'USA'], ['United States', 'USA'], ['America', 'USA'],
@@ -50,7 +50,7 @@ describe('country aliases', () => {
     ['Czechia', 'CZE'], ['Czech Republic', 'CZE'],
     ['Eswatini', 'SWZ'], ['Swaziland', 'SWZ'], ['eSwatini', 'SWZ'],
     ['Myanmar', 'MMR'], ['Burma', 'MMR'],
-    ['North Macedonia', 'MKD'], ['Macedonia', 'MKD'],
+    ['North Macedonia', 'MKD'], ['N Macedonia', 'MKD'],
     ['East Timor', 'TLS'], ['Timor-Leste', 'TLS'], ['timor leste', 'TLS'],
     ['Cape Verde', 'CPV'], ['Cabo Verde', 'CPV'],
     ['Türkiye', 'TUR'], ['Turkiye', 'TUR'], ['Turkey', 'TUR'],
@@ -79,6 +79,39 @@ describe('country aliases', () => {
     for (const s of ['Ukrain', 'Nigeri', 'Untied States', 'Frnace', 'Korea', 'the', 'a', 'Guine']) {
       expect(country(s)).toBeNull();
     }
+  });
+
+  it('two-word names must be typed in full', () => {
+    for (const s of ['Saudi', 'Burkina', 'Salvador', 'Timor', 'Vatican', 'Macedonia', 'Dominican Rep', 'Marshall Is', 'Solomon Is', 'Czech Rep', 'Costa', 'Sri', 'New']) {
+      expect(country(s)).toBeNull();
+    }
+    expect(country('Saudi Arabia')).toBe('SAU');
+    expect(country('KSA')).toBe('SAU');
+    expect(country('Burkina Faso')).toBe('BFA');
+  });
+
+  it('longer names keep their short forms', () => {
+    expect(country('Saint Vincent')).toBe('VCT');
+    expect(country('Bosnia')).toBe('BIH');
+    expect(country('Antigua')).toBe('ATG');
+    expect(country('Trinidad')).toBe('TTO');
+  });
+
+  it('no alias lets you skip part of a two-word country name (abbreviations excepted)', () => {
+    const words = (s: string) => s.replace(/['’]/g, '').split(/[\s-]+/).filter(Boolean);
+    const isAbbreviation = (a: string) => /^[A-Z]{2,5}$/.test(a);
+    const problems: string[] = [];
+    for (const c of COUNTRIES) {
+      if (words(c.name).length !== 2) continue; // longer names keep their short forms
+      const full = normalize(c.name);
+      for (const alias of c.aliases) {
+        if (isAbbreviation(alias)) continue;
+        const k = normalize(alias);
+        if (k === full) continue;
+        if (full.startsWith(k) || words(c.name).some((w) => normalize(w) === k)) problems.push(`${c.name}: "${alias}"`);
+      }
+    }
+    expect(problems).toEqual([]);
   });
 });
 
@@ -172,13 +205,32 @@ describe('streak quiz judging', () => {
     expect(j('US', 'USA')).toBe('correct');
   });
 
-  it('marks another country wrong when it cannot be a prefix of the answer', () => {
+  it('marks another country wrong when it cannot grow into a longer answer', () => {
     expect(j('Nigeria', 'NER')).toBe('wrong');
-    expect(j('Guinea', 'GNQ')).toBe('wrong');
     expect(j('Sudan', 'SSD')).toBe('wrong');
     expect(j('Austria', 'AUS')).toBe('wrong');
     expect(j('Australia', 'AUT')).toBe('wrong');
     expect(j('France', 'DEU')).toBe('wrong');
+  });
+
+  it('waits on wrong answers that are the start of a longer name', () => {
+    // Current flag is France: none of these are marked wrong mid-word...
+    expect(j('UK', 'FRA')).toBe('none');
+    expect(j('Guinea', 'FRA')).toBe('none');
+    expect(j('Guinea', 'GNQ')).toBe('none');
+    expect(j('Niger', 'FRA')).toBe('none');
+    expect(j('Dominica', 'FRA')).toBe('none');
+    expect(j('Congo', 'FRA')).toBe('none');
+    // ...but the full longer name is, and Enter decides the short one.
+    expect(j('Ukraine', 'FRA')).toBe('wrong');
+    expect(j('Guinea Bissau', 'GNQ')).toBe('wrong');
+    expect(j('Guinea-Bissau', 'FRA')).toBe('wrong');
+    expect(j('Dominican Republic', 'FRA')).toBe('wrong');
+    expect(j('UK', 'FRA', true)).toBe('wrong');
+    expect(j('Guinea', 'GNQ', true)).toBe('wrong');
+    // The correct short answer is still instant.
+    expect(j('Guinea', 'GIN')).toBe('correct');
+    expect(j('UK', 'GBR')).toBe('correct');
   });
 
   it('Enter evaluates prefix pairs', () => {

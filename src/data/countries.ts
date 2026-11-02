@@ -20,6 +20,12 @@
 // a leading "the", "&" vs "and" and "St"/"St." vs "Saint" - so you don't need to
 // add variants that only differ in those ways (see src/lib/normalize.ts).
 //
+// Two-word names must be typed in full: don't add an alias that is just one of
+// the words ("Saudi") or the start of the name ("Dominican Rep"). Abbreviations
+// (UK, KSA, RSA) and genuinely different names (Ivory Coast, Holy See) are fine.
+// Longer names keep their short forms (Bosnia, Saint Vincent, Antigua).
+// A test in src/lib/matcher.test.ts checks this.
+//
 // Continent choices (one per country, edit `continent` to change):
 //   North America includes Central America and the Caribbean.
 //   Russia -> Europe; Cyprus -> Europe; Kosovo -> Europe
@@ -49,7 +55,7 @@ export const COUNTRIES: Country[] = [
   { id: 'AGO', name: 'Angola', aliases: [], continent: 'Africa', capitals: ['Luanda'], capitalAliases: [], flag: 'ao', mapId: '024' },
   { id: 'BEN', name: 'Benin', aliases: [], continent: 'Africa', capitals: ['Porto-Novo', 'Cotonou'], capitalAliases: [], flag: 'bj', mapId: '204' },
   { id: 'BWA', name: 'Botswana', aliases: [], continent: 'Africa', capitals: ['Gaborone'], capitalAliases: [], flag: 'bw', mapId: '072' },
-  { id: 'BFA', name: 'Burkina Faso', aliases: ['Burkina', 'Upper Volta'], continent: 'Africa', capitals: ['Ouagadougou'], capitalAliases: ['Ouaga'], flag: 'bf', mapId: '854' },
+  { id: 'BFA', name: 'Burkina Faso', aliases: ['Upper Volta'], continent: 'Africa', capitals: ['Ouagadougou'], capitalAliases: ['Ouaga'], flag: 'bf', mapId: '854' },
   { id: 'BDI', name: 'Burundi', aliases: [], continent: 'Africa', capitals: ['Gitega', 'Bujumbura'], capitalAliases: [], flag: 'bi', mapId: '108' },
   { id: 'CPV', name: 'Cabo Verde', aliases: ['Cape Verde', 'Cape Verde Islands'], continent: 'Africa', capitals: ['Praia'], capitalAliases: [], flag: 'cv', mapId: '132' },
   { id: 'CMR', name: 'Cameroon', aliases: ['Cameroun'], continent: 'Africa', capitals: ['Yaoundé'], capitalAliases: [], flag: 'cm', mapId: '120' },
@@ -134,7 +140,7 @@ export const COUNTRIES: Country[] = [
   { id: 'PSE', name: 'Palestine', aliases: ['State of Palestine', 'Palestinian Territories', 'Palestinian Territory'], continent: 'Asia', capitals: ['Ramallah', 'East Jerusalem'], capitalAliases: [], flag: 'ps', mapId: '275' },
   { id: 'PHL', name: 'Philippines', aliases: ['The Philippines', 'Phillipines'], continent: 'Asia', capitals: ['Manila'], capitalAliases: [], flag: 'ph', mapId: '608' },
   { id: 'QAT', name: 'Qatar', aliases: [], continent: 'Asia', capitals: ['Doha'], capitalAliases: [], flag: 'qa', mapId: '634' },
-  { id: 'SAU', name: 'Saudi Arabia', aliases: ['Saudi', 'KSA'], continent: 'Asia', capitals: ['Riyadh'], capitalAliases: [], flag: 'sa', mapId: '682' },
+  { id: 'SAU', name: 'Saudi Arabia', aliases: ['KSA'], continent: 'Asia', capitals: ['Riyadh'], capitalAliases: [], flag: 'sa', mapId: '682' },
   { id: 'SGP', name: 'Singapore', aliases: [], continent: 'Asia', capitals: ['Singapore'], capitalAliases: ['Singapore City'], flag: 'sg', mapId: '702' },
   { id: 'KOR', name: 'South Korea', aliases: ['Republic of Korea', 'S Korea', 'ROK', 'Korea Republic'], continent: 'Asia', capitals: ['Seoul'], capitalAliases: [], flag: 'kr', mapId: '410' },
   { id: 'LKA', name: 'Sri Lanka', aliases: ['Ceylon'], continent: 'Asia', capitals: ['Sri Jayawardenepura Kotte', 'Colombo'], capitalAliases: ['Kotte', 'Sri Jayewardenepura Kotte', 'Jayawardenepura Kotte'], flag: 'lk', mapId: '144' },
@@ -142,7 +148,7 @@ export const COUNTRIES: Country[] = [
   { id: 'TWN', name: 'Taiwan', aliases: ['Republic of China', 'ROC', 'Chinese Taipei', 'Formosa'], continent: 'Asia', capitals: ['Taipei'], capitalAliases: [], flag: 'tw', mapId: '158' },
   { id: 'TJK', name: 'Tajikistan', aliases: [], continent: 'Asia', capitals: ['Dushanbe'], capitalAliases: [], flag: 'tj', mapId: '762' },
   { id: 'THA', name: 'Thailand', aliases: ['Siam'], continent: 'Asia', capitals: ['Bangkok'], capitalAliases: ['Krung Thep'], flag: 'th', mapId: '764' },
-  { id: 'TLS', name: 'Timor-Leste', aliases: ['East Timor', 'Timor'], continent: 'Asia', capitals: ['Dili'], capitalAliases: [], flag: 'tl', mapId: '626' },
+  { id: 'TLS', name: 'Timor-Leste', aliases: ['East Timor'], continent: 'Asia', capitals: ['Dili'], capitalAliases: [], flag: 'tl', mapId: '626' },
   { id: 'TUR', name: 'Türkiye', aliases: ['Turkey'], continent: 'Asia', capitals: ['Ankara'], capitalAliases: [], flag: 'tr', mapId: '792' },
   { id: 'TKM', name: 'Turkmenistan', aliases: [], continent: 'Asia', capitals: ['Ashgabat'], capitalAliases: ['Ashkhabad', 'Asgabat'], flag: 'tm', mapId: '795' },
   { id: 'ARE', name: 'United Arab Emirates', aliases: ['UAE', 'Emirates'], continent: 'Asia', capitals: ['Abu Dhabi'], capitalAliases: [], flag: 'ae', mapId: '784' },
@@ -160,7 +166,7 @@ export const COUNTRIES: Country[] = [
   { id: 'BGR', name: 'Bulgaria', aliases: [], continent: 'Europe', capitals: ['Sofia'], capitalAliases: [], flag: 'bg', mapId: '100' },
   { id: 'HRV', name: 'Croatia', aliases: ['Hrvatska'], continent: 'Europe', capitals: ['Zagreb'], capitalAliases: [], flag: 'hr', mapId: '191' },
   { id: 'CYP', name: 'Cyprus', aliases: [], continent: 'Europe', capitals: ['Nicosia'], capitalAliases: ['Lefkosia'], flag: 'cy', mapId: '196' },
-  { id: 'CZE', name: 'Czechia', aliases: ['Czech Republic', 'Czech Rep'], continent: 'Europe', capitals: ['Prague'], capitalAliases: ['Praha'], flag: 'cz', mapId: '203' },
+  { id: 'CZE', name: 'Czechia', aliases: ['Czech Republic'], continent: 'Europe', capitals: ['Prague'], capitalAliases: ['Praha'], flag: 'cz', mapId: '203' },
   { id: 'DNK', name: 'Denmark', aliases: ['Danmark'], continent: 'Europe', capitals: ['Copenhagen'], capitalAliases: ['København'], flag: 'dk', mapId: '208' },
   { id: 'EST', name: 'Estonia', aliases: ['Eesti'], continent: 'Europe', capitals: ['Tallinn'], capitalAliases: [], flag: 'ee', mapId: '233' },
   { id: 'FIN', name: 'Finland', aliases: ['Suomi'], continent: 'Europe', capitals: ['Helsinki'], capitalAliases: [], flag: 'fi', mapId: '246' },
@@ -181,7 +187,7 @@ export const COUNTRIES: Country[] = [
   { id: 'MCO', name: 'Monaco', aliases: [], continent: 'Europe', capitals: ['Monaco'], capitalAliases: ['Monaco-Ville'], flag: 'mc', mapId: '492' },
   { id: 'MNE', name: 'Montenegro', aliases: ['Crna Gora'], continent: 'Europe', capitals: ['Podgorica', 'Cetinje'], capitalAliases: [], flag: 'me', mapId: '499' },
   { id: 'NLD', name: 'Netherlands', aliases: ['Holland', 'Nederland'], continent: 'Europe', capitals: ['Amsterdam', 'The Hague'], capitalAliases: ['Den Haag'], flag: 'nl', mapId: '528' },
-  { id: 'MKD', name: 'North Macedonia', aliases: ['Macedonia', 'N Macedonia', 'FYROM'], continent: 'Europe', capitals: ['Skopje'], capitalAliases: [], flag: 'mk', mapId: '807' },
+  { id: 'MKD', name: 'North Macedonia', aliases: ['N Macedonia', 'FYROM'], continent: 'Europe', capitals: ['Skopje'], capitalAliases: [], flag: 'mk', mapId: '807' },
   { id: 'NOR', name: 'Norway', aliases: ['Norge'], continent: 'Europe', capitals: ['Oslo'], capitalAliases: [], flag: 'no', mapId: '578' },
   { id: 'POL', name: 'Poland', aliases: ['Polska'], continent: 'Europe', capitals: ['Warsaw'], capitalAliases: ['Warszawa'], flag: 'pl', mapId: '616' },
   { id: 'PRT', name: 'Portugal', aliases: [], continent: 'Europe', capitals: ['Lisbon'], capitalAliases: ['Lisboa'], flag: 'pt', mapId: '620' },
@@ -196,10 +202,10 @@ export const COUNTRIES: Country[] = [
   { id: 'CHE', name: 'Switzerland', aliases: ['Swiss Confederation', 'Schweiz', 'Suisse'], continent: 'Europe', capitals: ['Bern'], capitalAliases: ['Berne'], flag: 'ch', mapId: '756' },
   { id: 'UKR', name: 'Ukraine', aliases: [], continent: 'Europe', capitals: ['Kyiv'], capitalAliases: ['Kiev', 'Kyyiv'], flag: 'ua', mapId: '804' },
   { id: 'GBR', name: 'United Kingdom', aliases: ['UK', 'Great Britain', 'Britain', 'GB', 'England', 'United Kingdom of Great Britain and Northern Ireland'], continent: 'Europe', capitals: ['London'], capitalAliases: [], flag: 'gb', mapId: '826' },
-  { id: 'VAT', name: 'Vatican City', aliases: ['Vatican', 'Holy See', 'Vatican City State'], continent: 'Europe', capitals: ['Vatican City'], capitalAliases: ['Vatican'], flag: 'va', mapId: '336' },
+  { id: 'VAT', name: 'Vatican City', aliases: ['Holy See', 'Vatican City State', 'Vatican'], continent: 'Europe', capitals: ['Vatican City'], capitalAliases: ['Vatican'], flag: 'va', mapId: '336' },
 
   // --------------------------------------------------------- North America (23)
-  { id: 'ATG', name: 'Antigua and Barbuda', aliases: ['Antigua'], continent: 'North America', capitals: ["Saint John's"], capitalAliases: [], flag: 'ag', mapId: '028' },
+  { id: 'ATG', name: 'Antigua and Barbuda', aliases: [], continent: 'North America', capitals: ["Saint John's"], capitalAliases: [], flag: 'ag', mapId: '028' },
   { id: 'BHS', name: 'Bahamas', aliases: ['The Bahamas'], continent: 'North America', capitals: ['Nassau'], capitalAliases: [], flag: 'bs', mapId: '044' },
   { id: 'BRB', name: 'Barbados', aliases: [], continent: 'North America', capitals: ['Bridgetown'], capitalAliases: [], flag: 'bb', mapId: '052' },
   { id: 'BLZ', name: 'Belize', aliases: [], continent: 'North America', capitals: ['Belmopan'], capitalAliases: [], flag: 'bz', mapId: '084' },
@@ -207,8 +213,8 @@ export const COUNTRIES: Country[] = [
   { id: 'CRI', name: 'Costa Rica', aliases: [], continent: 'North America', capitals: ['San José'], capitalAliases: [], flag: 'cr', mapId: '188' },
   { id: 'CUB', name: 'Cuba', aliases: [], continent: 'North America', capitals: ['Havana'], capitalAliases: ['La Habana', 'Habana'], flag: 'cu', mapId: '192' },
   { id: 'DMA', name: 'Dominica', aliases: [], continent: 'North America', capitals: ['Roseau'], capitalAliases: [], flag: 'dm', mapId: '212' },
-  { id: 'DOM', name: 'Dominican Republic', aliases: ['Dominican Rep'], continent: 'North America', capitals: ['Santo Domingo'], capitalAliases: [], flag: 'do', mapId: '214' },
-  { id: 'SLV', name: 'El Salvador', aliases: ['Salvador'], continent: 'North America', capitals: ['San Salvador'], capitalAliases: [], flag: 'sv', mapId: '222' },
+  { id: 'DOM', name: 'Dominican Republic', aliases: [], continent: 'North America', capitals: ['Santo Domingo'], capitalAliases: [], flag: 'do', mapId: '214' },
+  { id: 'SLV', name: 'El Salvador', aliases: [], continent: 'North America', capitals: ['San Salvador'], capitalAliases: [], flag: 'sv', mapId: '222' },
   { id: 'GRD', name: 'Grenada', aliases: [], continent: 'North America', capitals: ["Saint George's"], capitalAliases: [], flag: 'gd', mapId: '308' },
   { id: 'GTM', name: 'Guatemala', aliases: [], continent: 'North America', capitals: ['Guatemala City'], capitalAliases: ['Guatemala', 'Ciudad de Guatemala'], flag: 'gt', mapId: '320' },
   { id: 'HTI', name: 'Haiti', aliases: [], continent: 'North America', capitals: ['Port-au-Prince'], capitalAliases: [], flag: 'ht', mapId: '332' },
@@ -220,7 +226,7 @@ export const COUNTRIES: Country[] = [
   { id: 'KNA', name: 'Saint Kitts and Nevis', aliases: ['Saint Kitts', 'Saint Christopher and Nevis', 'Saint Kitts-Nevis'], continent: 'North America', capitals: ['Basseterre'], capitalAliases: [], flag: 'kn', mapId: '659' },
   { id: 'LCA', name: 'Saint Lucia', aliases: [], continent: 'North America', capitals: ['Castries'], capitalAliases: [], flag: 'lc', mapId: '662' },
   { id: 'VCT', name: 'Saint Vincent and the Grenadines', aliases: ['Saint Vincent', 'Saint Vincent and Grenadines', 'Saint Vincent & the Grenadines'], continent: 'North America', capitals: ['Kingstown'], capitalAliases: [], flag: 'vc', mapId: '670' },
-  { id: 'TTO', name: 'Trinidad and Tobago', aliases: ['Trinidad'], continent: 'North America', capitals: ['Port of Spain'], capitalAliases: [], flag: 'tt', mapId: '780' },
+  { id: 'TTO', name: 'Trinidad and Tobago', aliases: [], continent: 'North America', capitals: ['Port of Spain'], capitalAliases: [], flag: 'tt', mapId: '780' },
   { id: 'USA', name: 'United States', aliases: ['USA', 'US', 'United States of America', 'America', 'US of A'], continent: 'North America', capitals: ['Washington, D.C.'], capitalAliases: ['Washington', 'DC', 'Washington DC'], flag: 'us', mapId: '840' },
 
   // --------------------------------------------------------- South America (12)
@@ -241,14 +247,14 @@ export const COUNTRIES: Country[] = [
   { id: 'AUS', name: 'Australia', aliases: [], continent: 'Oceania', capitals: ['Canberra'], capitalAliases: [], flag: 'au', mapId: '036' },
   { id: 'FJI', name: 'Fiji', aliases: [], continent: 'Oceania', capitals: ['Suva'], capitalAliases: [], flag: 'fj', mapId: '242' },
   { id: 'KIR', name: 'Kiribati', aliases: [], continent: 'Oceania', capitals: ['South Tarawa'], capitalAliases: ['Tarawa', 'Bairiki'], flag: 'ki', mapId: '296' },
-  { id: 'MHL', name: 'Marshall Islands', aliases: ['Marshall Is', 'Marshalls'], continent: 'Oceania', capitals: ['Majuro'], capitalAliases: [], flag: 'mh', mapId: '584' },
+  { id: 'MHL', name: 'Marshall Islands', aliases: ['Marshalls'], continent: 'Oceania', capitals: ['Majuro'], capitalAliases: [], flag: 'mh', mapId: '584' },
   { id: 'FSM', name: 'Micronesia', aliases: ['Federated States of Micronesia', 'FSM'], continent: 'Oceania', capitals: ['Palikir'], capitalAliases: [], flag: 'fm', mapId: '583' },
   { id: 'NRU', name: 'Nauru', aliases: [], continent: 'Oceania', capitals: ['Yaren'], capitalAliases: ['Yaren District'], flag: 'nr', mapId: '520' },
   { id: 'NZL', name: 'New Zealand', aliases: ['NZ', 'Aotearoa'], continent: 'Oceania', capitals: ['Wellington'], capitalAliases: [], flag: 'nz', mapId: '554' },
   { id: 'PLW', name: 'Palau', aliases: ['Belau'], continent: 'Oceania', capitals: ['Ngerulmud'], capitalAliases: ['Melekeok'], flag: 'pw', mapId: '585' },
   { id: 'PNG', name: 'Papua New Guinea', aliases: ['PNG', 'Papua'], continent: 'Oceania', capitals: ['Port Moresby'], capitalAliases: [], flag: 'pg', mapId: '598' },
   { id: 'WSM', name: 'Samoa', aliases: ['Western Samoa'], continent: 'Oceania', capitals: ['Apia'], capitalAliases: [], flag: 'ws', mapId: '882' },
-  { id: 'SLB', name: 'Solomon Islands', aliases: ['Solomons', 'Solomon Is'], continent: 'Oceania', capitals: ['Honiara'], capitalAliases: [], flag: 'sb', mapId: '090' },
+  { id: 'SLB', name: 'Solomon Islands', aliases: ['Solomons'], continent: 'Oceania', capitals: ['Honiara'], capitalAliases: [], flag: 'sb', mapId: '090' },
   { id: 'TON', name: 'Tonga', aliases: [], continent: 'Oceania', capitals: ['Nukuʻalofa'], capitalAliases: [], flag: 'to', mapId: '776' },
   { id: 'TUV', name: 'Tuvalu', aliases: ['Ellice Islands'], continent: 'Oceania', capitals: ['Funafuti'], capitalAliases: [], flag: 'tv', mapId: '798' },
   { id: 'VUT', name: 'Vanuatu', aliases: ['New Hebrides'], continent: 'Oceania', capitals: ['Port Vila'], capitalAliases: [], flag: 'vu', mapId: '548' },

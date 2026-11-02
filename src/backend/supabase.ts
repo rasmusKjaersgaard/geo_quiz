@@ -123,26 +123,32 @@ export class SupabaseBackend implements Backend {
   }
 
   async getSettings(): Promise<Settings> {
-    const { data, error } = await this.sb
-      .from('settings')
-      .select('time_limits, leaderboard_size, leaderboard_mode')
-      .eq('id', 1)
-      .maybeSingle();
+    // select('*') so the app keeps working on a database that predates a new column.
+    const { data, error } = await this.sb.from('settings').select('*').eq('id', 1).maybeSingle();
     fail(error);
     if (!data) return DEFAULT_SETTINGS;
     return {
       timeLimits: (data.time_limits ?? {}) as Record<string, number>,
       leaderboardSize: data.leaderboard_size ?? DEFAULT_SETTINGS.leaderboardSize,
       leaderboardMode: data.leaderboard_mode === 'all' ? 'all' : 'best',
+      capitalsPrompt: data.capitals_prompt === 'map' ? 'map' : 'outline',
     };
   }
 
   async updateSettings(s: Settings) {
     const { data, error } = await this.sb
       .from('settings')
-      .update({ time_limits: s.timeLimits, leaderboard_size: s.leaderboardSize, leaderboard_mode: s.leaderboardMode })
+      .update({
+        time_limits: s.timeLimits,
+        leaderboard_size: s.leaderboardSize,
+        leaderboard_mode: s.leaderboardMode,
+        capitals_prompt: s.capitalsPrompt,
+      })
       .eq('id', 1)
       .select('id');
+    if (error && /capitals_prompt/.test(error.message)) {
+      throw new UserError('The database needs a small update first: run supabase/update-capitals-map.sql in the Supabase SQL Editor (see README).');
+    }
     fail(error);
     if (!data?.length) throw new UserError('Only the admin can change settings.');
   }

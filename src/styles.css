@@ -558,6 +558,51 @@ main {
   stroke: var(--surface);
   stroke-opacity: 1;
 }
+/* Capitals map mode: the country being asked about. */
+.map-wrap .world path.current,
+.map-wrap .world circle.marker.current {
+  fill: var(--accent);
+  stroke: var(--ink);
+  stroke-opacity: 0.6;
+}
+.map-wrap .world .locator-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+  animation: locate 1.4s ease-in-out infinite;
+}
+@keyframes locate {
+  0%,
+  100% {
+    transform: scale(1);
+    stroke-opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    stroke-opacity: 0.35;
+  }
+}
+.prompt.map-prompt {
+  display: block;
+  place-items: stretch;
+  padding: 14px 14px 4px;
+  min-height: 0;
+}
+.prompt.map-prompt h2 {
+  text-align: center;
+  font-size: clamp(24px, 3.6vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 2px 0 12px;
+}
+.prompt.map-prompt .map-wrap {
+  margin-bottom: 10px;
+}
+/* Keep the answer box on screen: the map shrinks to fit the window height. */
+.prompt.map-prompt .map-wrap svg.world {
+  max-height: max(240px, calc(100vh - 430px));
+}
 .map-tools {
   position: absolute;
   right: 10px;
@@ -656,55 +701,6 @@ main {
   grid-template-columns: 1.4fr 1fr 1fr 1fr;
   gap: 10px;
   margin-bottom: 14px;
-}
-@media (max-width: 620px) {
-  .hud {
-    grid-template-columns: 1.3fr 1.2fr 0.9fr 1fr;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
-  .stat {
-    padding: 6px 8px;
-  }
-  .stat .label {
-    font-size: 11px;
-  }
-  .stat .value,
-  .stat.score .value {
-    font-size: 20px;
-  }
-  .mult {
-    margin-left: 4px;
-    font-size: 11px;
-    padding: 1px 5px;
-  }
-  .pop {
-    font-size: 16px;
-    right: 6px;
-  }
-  .prompt {
-    min-height: 0;
-    padding: 14px;
-    margin-bottom: 8px;
-  }
-  .prompt .flag {
-    width: auto;
-    max-width: 100%;
-    height: 28vh;
-  }
-  .silhouette {
-    height: 120px;
-  }
-  .gamebar {
-    padding: 8px;
-    gap: 8px;
-  }
-  .keys {
-    display: none;
-  }
-  .topbar .who {
-    display: none;
-  }
 }
 .stat {
   background: var(--surface);
@@ -1019,6 +1015,60 @@ kbd {
   align-items: center;
   gap: 12px;
   margin-top: 14px;
+}
+.save-row.settings-save {
+  margin: 0 0 28px;
+}
+
+/* Small screens (kept after the base rules so it wins). */
+@media (max-width: 620px) {
+  .hud {
+    grid-template-columns: 1.3fr 1.2fr 0.9fr 1fr;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .stat {
+    padding: 6px 8px;
+  }
+  .stat .label {
+    font-size: 11px;
+  }
+  .stat .value,
+  .stat.score .value {
+    font-size: 20px;
+  }
+  .mult {
+    margin-left: 4px;
+    font-size: 11px;
+    padding: 1px 5px;
+  }
+  .pop {
+    font-size: 16px;
+    right: 6px;
+  }
+  .prompt {
+    min-height: 0;
+    padding: 14px;
+    margin-bottom: 8px;
+  }
+  .prompt .flag {
+    width: auto;
+    max-width: 100%;
+    height: 28vh;
+  }
+  .silhouette {
+    height: 120px;
+  }
+  .gamebar {
+    padding: 8px;
+    gap: 8px;
+  }
+  .keys {
+    display: none;
+  }
+  .topbar .who {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

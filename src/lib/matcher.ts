@@ -40,6 +40,12 @@ export class AnswerIndex {
     return false;
   }
 
+  /** Can `key` still grow into a longer answer ("guinea" -> "guineabissau")? */
+  hasLonger(key: string): boolean {
+    for (const k of this.byKey.keys()) if (k.length > key.length && k.startsWith(key)) return true;
+    return false;
+  }
+
   /** Keys that map to more than one country (should be empty; checked by tests). */
   collisions(): [string, string[]][] {
     return [...this.byKey.entries()].filter(([, ids]) => ids.length > 1);
@@ -119,10 +125,13 @@ export type Verdict = 'correct' | 'wrong' | 'none';
 /**
  * Flags / capitals quizzes: judge the text typed for the current prompt.
  *
- * - correct: the text is an accepted answer for the current country.
- * - wrong:   the text exactly matches a *different* country's answer and is not
- *            a prefix of any accepted answer for the current one (so "Niger"
- *            while typing "Nigeria" or "UK" while typing "Ukraine" do nothing).
+ * - correct: the text is an accepted answer for the current country. Accepted
+ *            the instant it's complete.
+ * - wrong:   the text exactly matches a *different* country's answer and can't
+ *            grow into any longer answer. So "Guinea" (-> Guinea-Bissau),
+ *            "UK" (-> Ukraine), "Niger" (-> Nigeria) and "Dominica"
+ *            (-> Dominican Republic) are never marked wrong while you type -
+ *            only once you've typed the full longer name, or press Enter.
  *            With `submit` (Enter), any other country's full answer is wrong.
  * - none:    anything else (partial text) - keep typing.
  */
@@ -134,6 +143,6 @@ export function judge(input: string, currentId: string, index: AnswerIndex, opts
   const others = index.idsFor(key).filter((id) => id !== currentId);
   if (others.length === 0) return 'none';
   if (opts.submit) return 'wrong';
-  if (current.some((k) => k.startsWith(key))) return 'none';
+  if (index.hasLonger(key)) return 'none';
   return 'wrong';
 }
