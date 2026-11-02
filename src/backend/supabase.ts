@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../env';
 import { bestPerUser } from '../lib/ranking';
 import { usernameToEmail, validatePassword, validateUsername } from '../lib/username';
-import { DEFAULT_SETTINGS, UserError, type Backend, type Profile, type ScoreInput, type ScoreRow, type Settings } from './types';
+import { DEFAULT_SETTINGS, PHOTO_BUCKET, photoPath, UserError, type Backend, type Profile, type ScoreInput, type ScoreRow, type Settings } from './types';
 
 interface DbScore {
   id: string;
@@ -17,6 +17,8 @@ interface DbScore {
   time_ms: number;
   created_at: string;
 }
+
+const PHOTO_SETUP_MESSAGE = 'Photo storage isn\'t set up yet: run supabase/update-people-quiz.sql in the Supabase SQL Editor (see README).';
 
 const SCORE_COLUMNS = 'id, user_id, quiz_id, score, correct, total, best_streak, completed_all, time_ms, created_at';
 
@@ -207,6 +209,39 @@ export class SupabaseBackend implements Backend {
     const rows = ((data ?? []) as DbScore[]).map((r) => toRow(r));
     for (const q of new Set(rows.map((r) => r.quizId))) out[q] = bestPerUser(rows.filter((r) => r.quizId === q))[0];
     return out;
+  }
+
+  async listPhotos() {
+    const bucket = this.sb.storage.from(PHOTO_BUCKET);
+    const { data: files, error } = await bucket.list('', { limit: 1000 });
+    if (error) {
+      if (/bucket not found/i.test(error.message)) throw new UserError(PHOTO_SETUP_MESSAGE);
+      fail(error);
+    }
+    const paths = (files ?? []).filter((f) => f.id && f.name.endsWith('.jpg')).map((f) => f.name);
+    if (!paths.length) return {};
+    const { data: signed, error: signError } = await bucket.createSignedUrls(paths, 60 * 60);
+    fail(signError);
+    const out: Record<string, string> = {};
+    for (const s of signed ?? []) if (s.path && s.signedUrl && !s.error) out[s.path.replace(/\.jpg$/, '')] = s.signedUrl;
+    return out;
+  }
+
+  async uploadPhoto(personId: string, image: Blob) {
+    const { error } = await this.sb.storage
+      .from(PHOTO_BUCKET)
+      .upload(photoPath(personId), image, { upsert: true, contentType: 'image/jpeg', cacheControl: '60' });
+    if (error) {
+      if (/bucket not found/i.test(error.message)) throw new UserError(PHOTO_SETUP_MESSAGE);
+      if (/row-level security|unauthorized|403/i.test(error.message)) throw new UserError('Only the admin can upload photos.');
+      fail(error);
+    }
+  }
+
+  async deletePhoto(personId: string) {
+    const { data, error } = await this.sb.storage.from(PHOTO_BUCKET).remove([photoPath(personId)]);
+    fail(error);
+    if (!data?.length) throw new UserError('The photo could not be removed. Only the admin can remove photos.');
   }
 
   async deleteScore(id: string) {

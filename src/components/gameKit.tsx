@@ -10,6 +10,10 @@ export interface GameResult {
 
 export interface GameProps {
   quizId: string;
+  /** Items to ask about (defaults to the quiz's own list; the people quiz passes only those with photos). */
+  itemIds?: string[];
+  /** People quiz: person id -> photo URL. */
+  photos?: Record<string, string>;
   limitSec: number;
   finished: boolean;
   onFinish: (result: GameResult) => void;

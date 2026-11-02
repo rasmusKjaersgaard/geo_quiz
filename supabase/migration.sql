@@ -42,15 +42,12 @@ create table if not exists public.settings_private (
   invite_code  text not null check (length(invite_code) >= 3)
 );
 -- First invite code (change it here, or later on the admin Settings page).
-insert into public.settings_private (id, invite_code) values (1, 'farshat') on conflict (id) do nothing;
+insert into public.settings_private (id, invite_code) values (1, 'change-me') on conflict (id) do nothing;
 
 create table if not exists public.scores (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null default auth.uid() references public.profiles (id) on delete cascade,
-  quiz_id        text not null check (quiz_id in (
-                   'countries', 'flags', 'capitals',
-                   'capitals-africa', 'capitals-asia', 'capitals-europe',
-                   'capitals-north-america', 'capitals-south-america', 'capitals-oceania')),
+  quiz_id        text not null,
   score          int not null check (score >= 0),
   correct        int not null check (correct >= 0),
   total          int not null check (total > 0 and correct <= total),
@@ -59,6 +56,10 @@ create table if not exists public.scores (
   time_ms        int not null check (time_ms >= 0),
   created_at     timestamptz not null default now()
 );
+-- Quiz ids are short slugs like 'flags' or 'danish-actors'. (Older versions
+-- listed every quiz id here; this replaces that list so new quizzes just work.)
+alter table public.scores drop constraint if exists scores_quiz_id_check;
+alter table public.scores add constraint scores_quiz_id_check check (quiz_id ~ '^[a-z0-9-]{1,40}$');
 create index if not exists scores_quiz_idx on public.scores (quiz_id);
 create index if not exists scores_user_idx on public.scores (user_id);
 
@@ -226,6 +227,29 @@ create policy "insert own scores" on public.scores
 drop policy if exists "admin deletes scores" on public.scores;
 create policy "admin deletes scores" on public.scores
   for delete to authenticated using (public.is_admin());
+
+-- ------------------------------------------------------- people photos --
+-- Photos for the Danish Actors quiz live in a private storage bucket.
+-- Logged-in players can view them (through short-lived links); only the
+-- admin can add, replace or remove them.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('people-photos', 'people-photos', false, 2097152, array['image/jpeg'])
+on conflict (id) do update
+  set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "people photos readable by members" on storage.objects;
+create policy "people photos readable by members" on storage.objects
+  for select to authenticated using (bucket_id = 'people-photos');
+drop policy if exists "people photos added by admin" on storage.objects;
+create policy "people photos added by admin" on storage.objects
+  for insert to authenticated with check (bucket_id = 'people-photos' and public.is_admin());
+drop policy if exists "people photos replaced by admin" on storage.objects;
+create policy "people photos replaced by admin" on storage.objects
+  for update to authenticated using (bucket_id = 'people-photos' and public.is_admin())
+  with check (bucket_id = 'people-photos' and public.is_admin());
+drop policy if exists "people photos removed by admin" on storage.objects;
+create policy "people photos removed by admin" on storage.objects
+  for delete to authenticated using (bucket_id = 'people-photos' and public.is_admin());
 
 -- ------------------------------------------------------------- privileges --
 revoke all on public.settings_private from anon;

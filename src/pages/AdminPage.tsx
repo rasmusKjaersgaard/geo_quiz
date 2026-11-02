@@ -3,6 +3,7 @@ import { backend, type CapitalsPrompt, type LeaderboardMode } from '../backend';
 import { QUIZZES } from '../data/quizzes';
 import { durationText, parseDuration } from '../lib/format';
 import { timeLimitOf, useApp } from '../state';
+import { PhotoManager } from '../components/PhotoManager';
 
 const SIZES = [10, 25, 50, 100];
 
@@ -141,6 +142,8 @@ export function AdminPage() {
           {inviteMsg && <span className={inviteMsg.ok ? 'ok' : 'error'}>{inviteMsg.text}</span>}
         </div>
       </section>
+
+      <PhotoManager />
     </div>
   );
 }

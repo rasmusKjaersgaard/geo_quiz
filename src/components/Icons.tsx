@@ -58,3 +58,11 @@ export const GlyphCapital = () => (
     <path d="M22 9l1.8 3.8 4.2.5-3.1 2.9.8 4.1-3.7-2.1-3.7 2.1.8-4.1-3.1-2.9 4.2-.5z" fill="var(--accent)" />
   </svg>
 );
+export const GlyphFace = () => (
+  <svg viewBox="0 0 44 44" className="glyph" aria-hidden>
+    <rect x="7" y="5" width="30" height="34" rx="4" fill="var(--sea)" />
+    <circle cx="22" cy="18" r="7" fill="var(--ink)" />
+    <path d="M10 39c1.5-8 6-12 12-12s10.5 4 12 12z" fill="var(--ink)" />
+    <path d="M28 7l2.2 4.4 4.8.7-3.5 3.4.8 4.8-4.3-2.3-4.3 2.3.8-4.8-3.5-3.4 4.8-.7z" fill="var(--accent)" />
+  </svg>
+);

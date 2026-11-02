@@ -8,14 +8,27 @@ export function acceptedAnswers(c: Country, kind: AnswerKind): string[] {
   return kind === 'country' ? [c.name, ...c.aliases] : [...c.capitals, ...c.capitalAliases];
 }
 
-/** Lookup between normalized answer keys and country ids for one answer kind. */
+/** One quiz item and every spelling accepted for it. */
+export interface AnswerEntry {
+  id: string;
+  answers: string[];
+}
+
+/**
+ * Lookup between normalized answer keys and item ids.
+ * Build it from countries (`new AnswerIndex(COUNTRIES, 'capital')`) or from any
+ * list of entries (`new AnswerIndex(peopleEntries)`).
+ */
 export class AnswerIndex {
   private byKey = new Map<string, string[]>();
   private keysById = new Map<string, string[]>();
 
-  constructor(countries: Country[], readonly kind: AnswerKind) {
-    for (const c of countries) {
-      const keys = [...new Set(acceptedAnswers(c, kind).map(normalize).filter(Boolean))];
+  constructor(items: readonly Country[] | readonly AnswerEntry[], kind?: AnswerKind) {
+    const entries: readonly AnswerEntry[] = kind
+      ? (items as readonly Country[]).map((c) => ({ id: c.id, answers: acceptedAnswers(c, kind) }))
+      : (items as readonly AnswerEntry[]);
+    for (const c of entries) {
+      const keys = [...new Set(c.answers.map(normalize).filter(Boolean))];
       this.keysById.set(c.id, keys);
       for (const k of keys) {
         const ids = this.byKey.get(k) ?? [];

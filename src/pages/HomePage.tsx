@@ -3,7 +3,7 @@ import { backend, type ScoreRow } from '../backend';
 import { QUIZZES, type QuizDef } from '../data/quizzes';
 import { durationText, formatNumber, formatTime } from '../lib/format';
 import { timeLimitOf, useApp } from '../state';
-import { GlyphCapital, GlyphFlag, GlyphGlobe } from '../components/Icons';
+import { GlyphCapital, GlyphFace, GlyphFlag, GlyphGlobe } from '../components/Icons';
 
 function bestText(quiz: QuizDef, best?: ScoreRow) {
   if (!best) return <span className="none">Not played yet</span>;
@@ -32,7 +32,7 @@ export function HomePage() {
   const card = (q: QuizDef, feature = false) => (
     <a key={q.id} href={`#/quiz/${q.id}`} className={`quiz-card ${feature ? 'feature' : ''}`}>
       <div>
-        {q.kind === 'countries' ? <GlyphGlobe /> : q.mode === 'flags' ? <GlyphFlag /> : <GlyphCapital />}
+        {q.kind === 'countries' ? <GlyphGlobe /> : q.mode === 'flags' ? <GlyphFlag /> : q.mode === 'people' ? <GlyphFace /> : <GlyphCapital />}
         <h2>{q.title}</h2>
       </div>
       <p>{q.blurb}</p>

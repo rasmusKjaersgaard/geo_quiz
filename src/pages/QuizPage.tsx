@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { backend, type ScoreRow } from '../backend';
 import { COUNTRY_BY_ID } from '../data/countries';
+import { PERSON_BY_ID } from '../data/people';
 import { QUIZ_BY_ID } from '../data/quizzes';
 import { asset } from '../env';
 import { durationText, formatNumber, formatTime } from '../lib/format';
@@ -14,7 +15,7 @@ type Phase = 'ready' | 'playing' | 'done';
 
 export function QuizPage({ quizId }: { quizId: string }) {
   const quiz = QUIZ_BY_ID[quizId];
-  const { settings } = useApp();
+  const { settings, profile } = useApp();
   const [phase, setPhase] = useState<Phase>('ready');
   const [run, setRun] = useState(0);
   const [result, setResult] = useState<GameResult | null>(null);
@@ -22,6 +23,23 @@ export function QuizPage({ quizId }: { quizId: string }) {
   const [rank, setRank] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [boardKey, setBoardKey] = useState(0);
+  // People quiz: photos uploaded by the admin (person id -> URL). Only these people are asked.
+  const isPeople = quiz?.mode === 'people';
+  const [photos, setPhotos] = useState<Record<string, string> | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+
+  const loadPhotos = useCallback(async () => {
+    try {
+      const p = await backend.listPhotos();
+      setPhotos(p);
+      setPhotoError(null);
+      return p;
+    } catch (e) {
+      setPhotoError((e as Error).message);
+      return null;
+    }
+  }, []);
 
   // Reset when navigating between quizzes.
   useEffect(() => {
@@ -29,7 +47,8 @@ export function QuizPage({ quizId }: { quizId: string }) {
     setResult(null);
     setSaved(null);
     setRank(null);
-  }, [quizId]);
+    if (isPeople) loadPhotos();
+  }, [quizId, isPeople, loadPhotos]);
 
   if (!quiz) {
     return (
@@ -42,7 +61,16 @@ export function QuizPage({ quizId }: { quizId: string }) {
 
   const limitSec = timeLimitOf(settings, quizId);
 
-  const start = () => {
+  const itemIds = isPeople ? quiz.itemIds.filter((id) => photos?.[id]) : quiz.itemIds;
+
+  const start = async () => {
+    // Fresh photo links for every game (they expire after an hour).
+    if (isPeople) {
+      setStarting(true);
+      const fresh = await loadPhotos();
+      setStarting(false);
+      if (!fresh) return;
+    }
     setResult(null);
     setSaved(null);
     setRank(null);
@@ -83,20 +111,42 @@ export function QuizPage({ quizId }: { quizId: string }) {
         <div>
           {phase === 'ready' && (
             <div className="card start">
-              <h2>{quiz.countryIds.length} {quiz.mode === 'capitals' ? 'capitals' : quiz.mode === 'flags' ? 'flags' : 'countries'}</h2>
+              {isPeople && photos === null ? (
+                <h2>{photoError ? 'Photos unavailable' : 'Loading photos…'}</h2>
+              ) : (
+                <h2>
+                  {itemIds.length} {isPeople ? (itemIds.length === 1 ? 'person' : 'people') : quiz.mode === 'capitals' ? 'capitals' : quiz.mode === 'flags' ? 'flags' : 'countries'}
+                </h2>
+              )}
               <p>{quiz.blurb}</p>
-              <button className="btn primary big" onClick={start} autoFocus>
-                Start quiz
-              </button>
+              {photoError && <p className="error">{photoError}</p>}
+              {isPeople && photos !== null && itemIds.length === 0 ? (
+                <p>{profile?.isAdmin ? 'No photos yet. Add them on the Settings page, under Danish Actors photos.' : 'No photos yet. The admin needs to add them first.'}</p>
+              ) : (
+                <button className="btn primary big" onClick={start} disabled={starting || (isPeople && photos === null)} autoFocus>
+                  {starting ? 'Loading photos…' : 'Start quiz'}
+                </button>
+              )}
               <div className="limit num">Time limit {durationText(limitSec)}</div>
             </div>
           )}
 
           {phase === 'done' && result && (
-            <Results quizId={quizId} result={result} saved={saved} rank={rank} saveError={saveError} onRetrySave={() => save(result)} onPlayAgain={start} />
+            <Results
+              quizId={quizId}
+              result={result}
+              photos={photos}
+              saved={saved}
+              rank={rank}
+              saveError={saveError}
+              onRetrySave={() => save(result)}
+              onPlayAgain={start}
+            />
           )}
 
-          {phase !== 'ready' && <Game key={run} quizId={quizId} limitSec={limitSec} finished={phase === 'done'} onFinish={onFinish} />}
+          {phase !== 'ready' && (
+            <Game key={run} quizId={quizId} itemIds={itemIds} photos={photos ?? undefined} limitSec={limitSec} finished={phase === 'done'} onFinish={onFinish} />
+          )}
         </div>
         <Leaderboard quizId={quizId} refreshKey={boardKey} highlightId={saved?.id} />
       </div>
@@ -107,6 +157,7 @@ export function QuizPage({ quizId }: { quizId: string }) {
 function Results(props: {
   quizId: string;
   result: GameResult;
+  photos: Record<string, string> | null;
   saved: ScoreRow | null;
   rank: number | null;
   saveError: string | null;
@@ -170,6 +221,15 @@ function Results(props: {
           {!isCountries && (
             <div className="missed-list">
               {result.missed.map((id) => {
+                if (quiz.mode === 'people') {
+                  const p = PERSON_BY_ID[id];
+                  return (
+                    <div className="missed-item" key={id}>
+                      {props.photos?.[id] && <img className="face" src={props.photos[id]} alt="" loading="lazy" />}
+                      <span className="cap">{p.name}</span>
+                    </div>
+                  );
+                }
                 const c = COUNTRY_BY_ID[id];
                 return (
                   <div className="missed-item" key={id}>

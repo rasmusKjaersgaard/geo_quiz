@@ -23,8 +23,9 @@
 // Two-word names must be typed in full: don't add an alias that is just one of
 // the words ("Saudi") or the start of the name ("Dominican Rep"). Abbreviations
 // (UK, KSA, RSA) and genuinely different names (Ivory Coast, Holy See) are fine.
-// Longer names keep their short forms (Bosnia, Saint Vincent, Antigua).
-// A test in src/lib/matcher.test.ts checks this.
+// To allow a short form anyway, add it to SHORT_FORM_EXCEPTIONS below.
+// Longer names may have short forms (Bosnia, Saint Vincent) - add or remove
+// them as you like. A test in src/lib/matcher.test.ts checks all this.
 //
 // Continent choices (one per country, edit `continent` to change):
 //   North America includes Central America and the Caribbean.
@@ -48,6 +49,12 @@ export interface Country {
   flag: string;
   mapId: string;
 }
+
+/**
+ * Aliases allowed even though they're part of a two-word name
+ * (the test would otherwise reject them). Add more as you like.
+ */
+export const SHORT_FORM_EXCEPTIONS: string[] = ['Vatican'];
 
 export const COUNTRIES: Country[] = [
   // ---------------------------------------------------------------- Africa (54)

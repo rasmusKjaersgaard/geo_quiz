@@ -1,7 +1,8 @@
 import { COUNTRIES, type Continent } from './countries';
+import { PEOPLE } from './people';
 
 export type QuizKind = 'countries' | 'streak';
-export type StreakMode = 'flags' | 'capitals';
+export type StreakMode = 'flags' | 'capitals' | 'people';
 
 export interface QuizDef {
   id: string;
@@ -10,7 +11,8 @@ export interface QuizDef {
   /** For streak quizzes: what is shown and what you type. */
   mode?: StreakMode;
   continent?: Continent;
-  countryIds: string[];
+  /** Country ids, or person ids for the people quiz. */
+  itemIds: string[];
   /** Used until the admin sets a time limit. */
   defaultTimeSec: number;
   blurb: string;
@@ -25,7 +27,7 @@ const continentQuiz = (continent: Continent, slug: string, defaultTimeSec: numbe
   kind: 'streak',
   mode: 'capitals',
   continent,
-  countryIds: idsOf(continent),
+  itemIds: idsOf(continent),
   defaultTimeSec,
   blurb: `Name the capital of every country in ${continent}.`,
 });
@@ -35,7 +37,7 @@ export const QUIZZES: QuizDef[] = [
     id: 'countries',
     title: 'Countries of the World',
     kind: 'countries',
-    countryIds: ALL_IDS,
+    itemIds: ALL_IDS,
     defaultTimeSec: 15 * 60,
     blurb: 'Name all 197 countries. Any order, no wrong answers.',
   },
@@ -44,7 +46,7 @@ export const QUIZZES: QuizDef[] = [
     title: 'Flags of the World',
     kind: 'streak',
     mode: 'flags',
-    countryIds: ALL_IDS,
+    itemIds: ALL_IDS,
     defaultTimeSec: 12 * 60,
     blurb: 'Name the country for each flag. Keep the streak going.',
   },
@@ -53,9 +55,19 @@ export const QUIZZES: QuizDef[] = [
     title: 'Capitals of the World',
     kind: 'streak',
     mode: 'capitals',
-    countryIds: ALL_IDS,
+    itemIds: ALL_IDS,
     defaultTimeSec: 12 * 60,
     blurb: 'Name the capital of every country.',
+  },
+  {
+    id: 'danish-actors',
+    title: 'Danish Actors',
+    kind: 'streak',
+    mode: 'people',
+    // Only people with an uploaded photo are used (see the Settings page).
+    itemIds: PEOPLE.map((p) => p.id),
+    defaultTimeSec: 8 * 60,
+    blurb: 'Name the Danish actor or actress in each photo.',
   },
   continentQuiz('Africa', 'africa', 5 * 60),
   continentQuiz('Asia', 'asia', 5 * 60),

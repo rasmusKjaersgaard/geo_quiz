@@ -54,7 +54,18 @@ export interface Backend {
   /** The signed-in user's best attempt per quiz id. */
   getMyBests(): Promise<Record<string, ScoreRow>>;
   deleteScore(id: string): Promise<void>;
+
+  /** Photos for the people quiz: person id -> URL the browser can show (valid for about an hour). */
+  listPhotos(): Promise<Record<string, string>>;
+  /** Admin only. `image` is already resized (see lib/image.ts). Replaces any existing photo. */
+  uploadPhoto(personId: string, image: Blob): Promise<void>;
+  /** Admin only. */
+  deletePhoto(personId: string): Promise<void>;
 }
+
+/** Storage bucket for people photos (created by the SQL update). */
+export const PHOTO_BUCKET = 'people-photos';
+export const photoPath = (personId: string) => `${personId}.jpg`;
 
 export const DEFAULT_SETTINGS: Settings = {
   timeLimits: {},

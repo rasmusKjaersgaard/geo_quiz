@@ -5,6 +5,7 @@ Sporcle-style geography quizzes for a group of friends, with accounts and per-qu
 - **Countries of the World**: name all 197 countries on a zoomable world map.
 - **Flags of the World**: name the country for each flag, with streak scoring.
 - **Capitals of the World**, plus one capitals quiz per continent (Africa, Asia, Europe, North America, South America, Oceania).
+- **Danish Actors**: name the actor or actress in each photo. The admin uploads the photos on the Settings page.
 
 It is built with Vite, React and TypeScript, hosted free on GitHub Pages, and uses Supabase for logins and scores.
 
@@ -133,7 +134,7 @@ All country data is in **`src/data/countries.ts`**: names, aliases, continent, c
 
 Before comparing, answers are normalized: case, accents, punctuation, hyphens, apostrophes and spaces are ignored, a leading "the" is dropped, "&" equals "and", and "St"/"St." equals "Saint". So you only need to add genuinely different names as aliases, not spelling variants of the same one. There is deliberately no typo tolerance.
 
-**Two-word names must be typed in full.** "Saudi" doesn't count for Saudi Arabia, nor "Burkina", "Vatican" or "Dominican Rep". Abbreviations still work (UK, USA, KSA, RSA, DRC), and so do genuinely different names (Ivory Coast, Holy See, Swaziland). Names of three or more words keep their short forms: Saint Vincent, Bosnia, Antigua, Trinidad, São Tomé. A unit test enforces this, so an alias that breaks the rule fails the build.
+**Two-word names must be typed in full.** "Saudi" doesn't count for Saudi Arabia, nor "Burkina", "Vatican" or "Dominican Rep". Abbreviations still work (UK, USA, KSA, RSA, DRC), and so do genuinely different names (Ivory Coast, Holy See, Swaziland). Names of three or more words can have short forms (Saint Vincent, Bosnia, São Tomé). A unit test enforces the rule, so an alias that breaks it stops the deploy. To allow a short form on purpose, like "Vatican", add it to `SHORT_FORM_EXCEPTIONS` in `src/data/countries.ts`.
 
 **Countries quiz:** a country is accepted the instant its name is complete, Sporcle-style, and the box clears. If you were actually typing a longer name, you can just keep going:
 
@@ -150,7 +151,21 @@ Before comparing, answers are normalized: case, accents, punctuation, hyphens, a
 
 The setting applies to all seven capitals quizzes from the next game, and shares the same leaderboards. The continent framings are in `CONTINENT_VIEWS` at the top of `src/components/MapView.tsx`.
 
-### Scoring (Flags and Capitals)
+### Danish Actors
+
+The 100 people are in **`src/data/people.ts`**, grouped into International, Present men, Present women, Comedians and revue, and Classics. You can edit names or add people there, but never change an `id` once a photo is uploaded: it's also the photo's file name.
+
+**Photos.** On the Settings page, *Danish Actors photos* lists everyone. Click a card, or drop an image on it, to add or replace that person's photo; *Remove* deletes it. Large photos are shrunk to at most 720 px and saved as JPEG before upload. The photos sit in a private Supabase storage bucket (`people-photos`). Only logged-in players can see them, through links that expire after an hour, and only the admin can change them. Only people with a photo are asked, so you can add photos gradually.
+
+**Accepted answers:**
+- The full name. A first name or surname alone never counts, because the list has many shared names (Mikkelsen, Nielsen, Christensen, Kaas…).
+- For names with three or more parts: the first name plus any one other part. "Sidse Babett" and "Sidse Knudsen" both work, and "Anders Berthelsen" works for Anders W. Berthelsen.
+- Danish letters typed any way: ø = o = oe, å = a = aa, æ = ae. "Søren" = "Soren" = "Soeren", "Asbæk" = "Asbaek".
+- Typing someone else's full name is wrong, even if that person has no photo yet. A name that could still grow into another one waits, as in Flags: "Nikolaj Lie" could become "Nikolaj Lie Kaas".
+
+Scoring and leaderboards work exactly as in Flags. The "total" saved with a score is the number of people with a photo at the time.
+
+### Scoring (Flags, Capitals and Danish Actors)
 
 The numbers live in `src/lib/scoring.ts` (`SCORING`):
 
@@ -188,12 +203,14 @@ A wrong answer resets the streak. The prompt stays on screen and its clock keeps
 - `settings`: time limits, leaderboard size and mode, and the capitals outline/map option. Readable by everyone; only the admin can update it.
 - `settings_private`: the invite code. Admin only.
 - `scores`: logged-in users can read all scores and insert only their own. Nobody can edit scores; the admin can delete them.
+- Storage bucket `people-photos` (private): photos for Danish Actors. Logged-in users can view; only the admin can upload, replace or delete.
 
 ### Updating an existing installation
 
 When an update adds something to the database, it comes with a small SQL file in `supabase/`. Run it once in the SQL Editor; each one is safe to run again. Re-running the whole `migration.sql` works too and keeps all accounts, scores and settings.
 
 - `update-capitals-map.sql`: adds the capitals outline/map setting.
+- `update-people-quiz.sql`: adds photo storage for Danish Actors and lets scores be saved for new quizzes. It also includes the capitals setting, so if you missed the file above, this one covers both.
 
 ### Changing the admin
 
@@ -209,6 +226,7 @@ When an update adds something to the database, it comes with a small SQL file in
 ## Troubleshooting
 
 - **"Sign-up was rejected."** The database refused the account. Usually the invite code changed between the check and the sign-up, or the migration wasn't run.
+- **"Photo storage isn't set up yet."** Run `supabase/update-people-quiz.sql` in the SQL Editor.
 - **"The database needs a small update first."** The site is newer than the database. Run the SQL file the message names (see *Updating an existing installation*).
 - **"Account created, but no session was returned."** "Confirm email" is still on in Supabase (step 2). Turn it off. The user can then log in normally.
 - **The site shows "Local mode".** The GitHub secrets are missing or misnamed. Check step 6, then re-run the workflow.

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { COUNTRY_BY_ID } from '../data/countries';
+import { PEOPLE, personAnswers } from '../data/people';
 import { QUIZ_BY_ID } from '../data/quizzes';
 import { asset } from '../env';
 import { formatNumber } from '../lib/format';
@@ -13,33 +14,39 @@ import { useApp } from '../state';
 
 const flagUrl = (id: string) => asset(`flags/${COUNTRY_BY_ID[id].flag}.svg`);
 
-/** Flags and Capitals quizzes. */
-export function StreakGame({ quizId, limitSec, finished, onFinish }: GameProps) {
+// Every listed person's name counts as an answer (so typing someone without a
+// photo yet is still marked wrong), but only people with photos are asked.
+const PEOPLE_INDEX = new AnswerIndex(PEOPLE.map((p) => ({ id: p.id, answers: personAnswers(p) })));
+
+/** Flags, Capitals and Danish Actors quizzes. */
+export function StreakGame({ quizId, itemIds, photos, limitSec, finished, onFinish }: GameProps) {
   const quiz = QUIZ_BY_ID[quizId];
   const mode = quiz.mode ?? 'flags';
+  const [ids] = useState(() => itemIds ?? quiz.itemIds);
   const index = useMemo(
-    () => new AnswerIndex(quiz.countryIds.map((id) => COUNTRY_BY_ID[id]), mode === 'flags' ? 'country' : 'capital'),
+    () => (mode === 'people' ? PEOPLE_INDEX : new AnswerIndex(quiz.itemIds.map((id) => COUNTRY_BY_ID[id]), mode === 'flags' ? 'country' : 'capital')),
     [quiz, mode],
   );
   const { start, elapsed } = useGameClock(limitSec);
-  const [state, setState] = useState<StreakState>(() => initStreak(quiz.countryIds, performance.now()));
+  const [state, setState] = useState<StreakState>(() => initStreak(ids, performance.now()));
   const stateRef = useRef(state);
   stateRef.current = state;
   const doneRef = useRef(false);
-  const total = quiz.countryIds.length;
+  const total = ids.length;
   const current = state.queue[0];
   // Capitals can show the country on a map instead of its outline (admin setting,
   // read once when the game starts).
   const { settings } = useApp();
   const [mapPrompt] = useState(() => mode === 'capitals' && settings.capitalsPrompt === 'map');
-  const activeMapIds = useMemo(() => new Set(quiz.countryIds.map((id) => COUNTRY_BY_ID[id].mapId)), [quiz]);
+  const activeMapIds = useMemo(() => new Set(mapPrompt ? ids.map((id) => COUNTRY_BY_ID[id].mapId) : []), [mapPrompt, ids]);
   const missedAtEnd = finished ? state.queue : null;
   const mapStatus = useMemo(() => {
     const st: Record<string, MapStatus> = {};
+    if (!mapPrompt) return st;
     for (const id of state.correctIds) st[COUNTRY_BY_ID[id].mapId] = 'found';
     for (const id of missedAtEnd ?? []) st[COUNTRY_BY_ID[id].mapId] = 'missed';
     return st;
-  }, [state.correctIds, missedAtEnd]);
+  }, [mapPrompt, state.correctIds, missedAtEnd]);
 
   const finish = (s: StreakState) => {
     if (doneRef.current) return;
@@ -85,14 +92,16 @@ export function StreakGame({ quizId, limitSec, finished, onFinish }: GameProps) 
     }
   };
 
-  // Preload the next few flags so they appear instantly.
+  // Preload the next few flags/photos so they appear instantly.
   useEffect(() => {
-    if (mode !== 'flags') return;
+    if (mode !== 'flags' && mode !== 'people') return;
     for (const id of state.queue.slice(1, 4)) {
+      const src = mode === 'flags' ? flagUrl(id) : photos?.[id];
+      if (!src) continue;
       const img = new Image();
-      img.src = flagUrl(id);
+      img.src = src;
     }
-  }, [mode, state.queue]);
+  }, [mode, state.queue, photos]);
 
   const ev = state.event;
   const nextMult = multiplier(state.streak + 1);
@@ -104,8 +113,8 @@ export function StreakGame({ quizId, limitSec, finished, onFinish }: GameProps) 
         onChange={onChange}
         onKeyDown={onKeyDown}
         disabled={finished}
-        placeholder={finished ? 'Game over' : mode === 'flags' ? 'Which country?' : 'Capital city…'}
-        label={mode === 'flags' ? 'Country for this flag' : 'Capital of this country'}
+        placeholder={finished ? 'Game over' : mode === 'flags' ? 'Which country?' : mode === 'people' ? 'Who is this?' : 'Capital city…'}
+        label={mode === 'flags' ? 'Country for this flag' : mode === 'people' ? 'Name of the person in the photo' : 'Capital of this country'}
         flash={ev?.type === 'wrong' ? 'wrong' : ev?.type === 'correct' ? 'right' : null}
         flashSeq={ev?.seq}
       />
@@ -176,6 +185,8 @@ export function StreakGame({ quizId, limitSec, finished, onFinish }: GameProps) 
         <div className="prompt" key={`${current}-${ev?.type === 'skip' ? ev.seq : ''}`}>
           {mode === 'flags' ? (
             <img className="flag prompt-enter" src={flagUrl(current)} alt="Flag to identify" draggable={false} />
+          ) : mode === 'people' ? (
+            <img className="person prompt-enter" src={photos?.[current]} alt="Who is this?" draggable={false} />
           ) : (
             <div className="country prompt-enter">
               <Silhouette mapId={COUNTRY_BY_ID[current].mapId} label={COUNTRY_BY_ID[current].name} />

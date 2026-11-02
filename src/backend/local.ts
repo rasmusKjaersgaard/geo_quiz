@@ -3,6 +3,7 @@
 // trying the quizzes before the database is set up. Not for real use.
 import { bestPerUser, rankLeaderboard, rankOf } from '../lib/ranking';
 import { isAdminName, validatePassword, validateUsername } from '../lib/username';
+import { deleteLocalPhoto, listLocalPhotos, putLocalPhoto } from './localPhotos';
 import { DEFAULT_SETTINGS, UserError, type Backend, type Profile, type ScoreInput, type ScoreRow, type Settings } from './types';
 
 interface LocalUser {
@@ -133,5 +134,17 @@ export class LocalBackend implements Backend {
   async deleteScore(id: string) {
     this.requireAdmin();
     write(K.scores, this.scores().filter((r) => r.id !== id));
+  }
+
+  async listPhotos() {
+    return listLocalPhotos();
+  }
+  async uploadPhoto(personId: string, image: Blob) {
+    this.requireAdmin();
+    await putLocalPhoto(personId, image);
+  }
+  async deletePhoto(personId: string) {
+    this.requireAdmin();
+    await deleteLocalPhoto(personId);
   }
 }

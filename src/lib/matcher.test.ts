@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COUNTRIES, COUNTRY_BY_ID } from '../data/countries';
+import { COUNTRIES, COUNTRY_BY_ID, SHORT_FORM_EXCEPTIONS } from '../data/countries';
 import { AnswerIndex, EMPTY_TYPING, judge, matchNew, matchTyping } from './matcher';
 import { normalize } from './normalize';
 
@@ -82,7 +82,7 @@ describe('country aliases', () => {
   });
 
   it('two-word names must be typed in full', () => {
-    for (const s of ['Saudi', 'Burkina', 'Salvador', 'Timor', 'Vatican', 'Macedonia', 'Dominican Rep', 'Marshall Is', 'Solomon Is', 'Czech Rep', 'Costa', 'Sri', 'New']) {
+    for (const s of ['Saudi', 'Burkina', 'Salvador', 'Timor', 'Macedonia', 'Dominican Rep', 'Marshall Is', 'Solomon Is', 'Czech Rep', 'Costa', 'Sri', 'New']) {
       expect(country(s)).toBeNull();
     }
     expect(country('Saudi Arabia')).toBe('SAU');
@@ -90,11 +90,12 @@ describe('country aliases', () => {
     expect(country('Burkina Faso')).toBe('BFA');
   });
 
-  it('longer names keep their short forms', () => {
+  it('chosen exceptions and long-name short forms work', () => {
+    expect(country('Vatican')).toBe('VAT');
     expect(country('Saint Vincent')).toBe('VCT');
     expect(country('Bosnia')).toBe('BIH');
-    expect(country('Antigua')).toBe('ATG');
-    expect(country('Trinidad')).toBe('TTO');
+    expect(country('Antigua')).toBeNull(); // removed on purpose: type "Antigua and Barbuda"
+    expect(country('Trinidad')).toBeNull();
   });
 
   it('no alias lets you skip part of a two-word country name (abbreviations excepted)', () => {
@@ -105,7 +106,7 @@ describe('country aliases', () => {
       if (words(c.name).length !== 2) continue; // longer names keep their short forms
       const full = normalize(c.name);
       for (const alias of c.aliases) {
-        if (isAbbreviation(alias)) continue;
+        if (isAbbreviation(alias) || SHORT_FORM_EXCEPTIONS.includes(alias)) continue;
         const k = normalize(alias);
         if (k === full) continue;
         if (full.startsWith(k) || words(c.name).some((w) => normalize(w) === k)) problems.push(`${c.name}: "${alias}"`);
